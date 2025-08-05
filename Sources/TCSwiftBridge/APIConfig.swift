@@ -33,6 +33,9 @@ public struct APIConfig {
     public static func getItemFromId(tcUrl: String) -> String {
         "\(tcUrl)/JsonRestServices/Core-2007-01-DataManagement/getItemFromId"
     }
+    public static func tcGetSavedQueriesUrl(tcUrl: String) -> String {
+           "\(tcUrl)/JsonRestServices/Query-2006-03-SavedQuery/getSavedQueries"
+       }
     public static func createBOMWindows(tcUrl: String) -> String {
         "\(tcUrl)/JsonRestServices/Cad-2007-01-StructureManagement/createBOMWindows"
     }

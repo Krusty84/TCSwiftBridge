@@ -810,6 +810,73 @@ public final class TeamcenterAPIService: ObservableObject {
         }
     }
     
+    /// Fetch list of all saved queries
+    public func getSavedQueries(
+            tcEndpointUrl: String
+        ) async -> [SavedQueryInfo]? {
+            // 1) Ensure we have a session
+            guard let session = jsessionId else {
+                print("No JSESSIONID—please login first.")
+                return nil
+            }
+            // 2) Build URL
+            guard let url = URL(string: tcEndpointUrl) else {
+                print("Invalid URL:", tcEndpointUrl)
+                return nil
+            }
+            // 3) Payload with empty header
+            let payload: [String: Any] = [
+                "header": ["state": [:], "policy": [:]]
+            ]
+            // 4) Serialize JSON
+            let jsonData: Data
+            do {
+                jsonData = try JSONSerialization.data(withJSONObject: payload)
+            } catch {
+                print("Failed to serialize JSON for getSavedQueries:", error)
+                return nil
+            }
+            // 5) Build request
+            var request = URLRequest(url: url)
+            request.httpMethod = "POST"
+            request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+            request.setValue("JSESSIONID=\(session)", forHTTPHeaderField: "Cookie")
+            request.httpBody = jsonData
+
+            do {
+                // 6) Send request
+                let (data, response) = try await URLSession.shared.data(for: request)
+                if let http = response as? HTTPURLResponse {
+                    self.emitRaw(request.url!, http, data)
+                    guard (200...299).contains(http.statusCode) else {
+                        print("getSavedQueries failed. HTTP status =", http.statusCode)
+                        return nil
+                    }
+                }
+                // 7) Decode JSON
+                let decoder = JSONDecoder()
+                let resp = try decoder.decode(GetSavedQueriesResponse.self, from: data)
+                guard let entries = resp.queries else {
+                    print("No 'queries' array in response")
+                    return nil
+                }
+                // 8) Flatten into SavedQueryInfo
+                return entries.map { entry in
+                    let q = entry.query
+                    return SavedQueryInfo(
+                        name: entry.name,
+                        description: entry.description,
+                        uid: q.uid,
+                        className: q.className,
+                        type: q.type
+                    )
+                }
+            } catch {
+                print("Network or decode error in getSavedQueries:", error)
+                return nil
+            }
+        }
+    
     /// Create BOM windows for an item using given revision rule info
     public func createBOMWindows(
         tcEndpointUrl: String,

@@ -340,3 +340,48 @@ public struct ErrorValue: Codable {
     let code: Int
     let level: Int
 }
+
+// MARK: – Models for getSavedQueries response
+
+/// One saved‐query entry
+public struct SavedQueryEntry: Codable {
+    public let name: String
+    public let description: String
+    public let query: FolderBasic
+
+    enum CodingKeys: String, CodingKey {
+        case name, description, query
+    }
+}
+
+/// ServiceData for getSavedQueries
+public struct SavedQueriesServiceData: Codable {
+    public let plain: [String]?
+    public let modelObjects: [String: FolderBasic]?
+    
+    enum CodingKeys: String, CodingKey {
+        case plain, modelObjects
+    }
+}
+
+/// Top‐level response for getSavedQueries
+public struct GetSavedQueriesResponse: Codable {
+    public let qName: String?
+    public let queries: [SavedQueryEntry]?
+    public let serviceData: SavedQueriesServiceData?
+
+    enum CodingKeys: String, CodingKey {
+        case qName = ".QName"
+        case queries
+        case serviceData = "ServiceData"
+    }
+}
+
+/// Flattened info for easier use
+public struct SavedQueryInfo {
+    public let name: String
+    public let description: String
+    public let uid: String
+    public let className: String
+    public let type: String
+}
