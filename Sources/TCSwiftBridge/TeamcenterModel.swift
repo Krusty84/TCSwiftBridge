@@ -49,6 +49,56 @@ public struct SessionServiceData: Codable {
     let modelObjects: [String: FolderBasic]   // FolderBasic models by UID
 }
 
+// A “catch-all” JSON type
+public enum JSONValue: Codable {
+    case string(String)
+    case number(Double)
+    case object([String: JSONValue])
+    case array([JSONValue])
+    case bool(Bool)
+    case null
+
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.singleValueContainer()
+        if container.decodeNil() {
+            self = .null
+        } else if let b = try? container.decode(Bool.self) {
+            self = .bool(b)
+        } else if let n = try? container.decode(Double.self) {
+            self = .number(n)
+        } else if let s = try? container.decode(String.self) {
+            self = .string(s)
+        } else if let arr = try? container.decode([JSONValue].self) {
+            self = .array(arr)
+        } else if let obj = try? container.decode([String: JSONValue].self) {
+            self = .object(obj)
+        } else {
+            throw DecodingError.dataCorruptedError(
+                in: container,
+                debugDescription: "Not a JSON value"
+            )
+        }
+    }
+
+    public func encode(to encoder: Encoder) throws {
+        var container = encoder.singleValueContainer()
+        switch self {
+        case .null:
+            try container.encodeNil()
+        case .bool(let b):
+            try container.encode(b)
+        case .number(let n):
+            try container.encode(n)
+        case .string(let s):
+            try container.encode(s)
+        case .array(let a):
+            try container.encode(a)
+        case .object(let o):
+            try container.encode(o)
+        }
+    }
+}
+
 /// Full response for GetTCSessionInfo API call
 public struct SessionInfoResponse: Codable {
     let qName: String?                 // XML QName
@@ -341,7 +391,7 @@ public struct ErrorValue: Codable {
     let level: Int
 }
 
-// MARK: – Models for getSavedQueries response
+// MARK: Codable models for getSavedQueries response
 
 /// One saved‐query entry
 public struct SavedQueryEntry: Codable {
@@ -384,4 +434,56 @@ public struct SavedQueryInfo {
     public let uid: String
     public let className: String
     public let type: String
+}
+
+
+// MARK: Codable models for CreateRelations response
+
+/// One output entry for createRelation
+public struct CreateRelationsOutput: Codable {
+    public let clientId: String
+    public let relation: FolderBasic
+
+    enum CodingKeys: String, CodingKey {
+        case clientId, relation
+    }
+}
+
+/// Top‐level response for createRelation
+public struct CreateRelationsResponse: Codable {
+    public let qName: String?
+    public let output: [CreateRelationsOutput]?
+    public let serviceData: SaveBOMWindowsServiceData?  // reuse the existing ServiceData model if shape matches
+
+    enum CodingKeys: String, CodingKey {
+        case qName = ".QName"
+        case output
+        case serviceData = "ServiceData"
+    }
+}
+
+// MARK: Codable models for getRevisionRules response
+
+/// One entry in GetRevisionRules output
+public struct RevisionRuleEntry: Codable {
+    public let revRule: FolderBasic
+    public let hasValueStatus: [String: Bool]
+    public let overrideFolders: [JSONValue]  // empty list in current payload
+
+    enum CodingKeys: String, CodingKey {
+        case revRule, hasValueStatus, overrideFolders
+    }
+}
+
+/// Top‐level response for getRevisionRules
+public struct GetRevisionRulesResponse: Codable {
+    public let qName: String?
+    public let output: [RevisionRuleEntry]?
+    public let serviceData: SessionServiceData?  // reuse your existing type for ServiceData
+
+    enum CodingKeys: String, CodingKey {
+        case qName = ".QName"
+        case output
+        case serviceData = "ServiceData"
+    }
 }

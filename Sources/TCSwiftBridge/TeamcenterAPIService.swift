@@ -727,6 +727,86 @@ public final class TeamcenterAPIService: ObservableObject {
         }
     }
     
+    /// Create a relation between two objects
+    public func createRelation(
+            tcEndpointUrl: String,
+            firstUid: String,
+            firstType: String,
+            secondUid: String,
+            secondType: String,
+            relationType: String
+        ) async -> FolderBasic? {
+            // 1) Check session
+            guard let session = jsessionId else {
+                print("No JSESSIONID—please login first.")
+                return nil
+            }
+            // 2) URL
+            guard let url = URL(string: tcEndpointUrl) else {
+                print("Invalid URL:", tcEndpointUrl)
+                return nil
+            }
+            // 3) Payload
+            let payload: [String: Any] = [
+                "header": ["state": [:], "policy": [:]],
+                "body": [
+                    "input": [
+                        [
+                            "primaryObject": [
+                                "uid": firstUid,
+                                "type": firstType
+                            ],
+                            "secondaryObject": [
+                                "uid": secondUid,
+                                "type": secondType
+                            ],
+                            "relationType": relationType,
+                            "clientId": "",
+                            "userData": ["uid": "", "type": ""]
+                        ]
+                    ]
+                ]
+            ]
+            // 4) JSON encode
+            let jsonData: Data
+            do {
+                jsonData = try JSONSerialization.data(withJSONObject: payload)
+            } catch {
+                print("Failed to serialize JSON for createRelation:", error)
+                return nil
+            }
+            // 5) Build request
+            var request = URLRequest(url: url)
+            request.httpMethod = "POST"
+            request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+            request.setValue("JSESSIONID=\(session)", forHTTPHeaderField: "Cookie")
+            request.httpBody = jsonData
+
+            do {
+                // 6) Send
+                let (data, response) = try await URLSession.shared.data(for: request)
+                if let http = response as? HTTPURLResponse {
+                    self.emitRaw(request.url!, http, data)
+                    guard (200...299).contains(http.statusCode) else {
+                        print("createRelation failed. HTTP status =", http.statusCode)
+                        return nil
+                    }
+                }
+                // 7) Decode
+                let decoder = JSONDecoder()
+                let resp = try decoder.decode(CreateRelationsResponse.self, from: data)
+                guard let first = resp.output?.first else {
+                    print("No output in createRelation response")
+                    return nil
+                }
+                // 8) Return the created relation
+                return first.relation
+            } catch {
+                print("Network or decode error in createRelation:", error)
+                return nil
+            }
+        }
+    
     /// Fetch an item and its revision by itemId and revIds
     public func getItemFromId(
         tcEndpointUrl: String,
@@ -873,6 +953,77 @@ public final class TeamcenterAPIService: ObservableObject {
                 }
             } catch {
                 print("Network or decode error in getSavedQueries:", error)
+                return nil
+            }
+        }
+    
+    /// Fetch all revision rules
+    public func getRevisionRules(
+            tcEndpointUrl: String
+        ) async -> [RevisionRuleEntry]? {
+            // 1) Check login
+            guard let session = jsessionId else {
+                print("No JSESSIONID—please login first.")
+                return nil
+            }
+            // 2) URL
+            guard let url = URL(string: tcEndpointUrl) else {
+                print("Invalid URL:", tcEndpointUrl)
+                return nil
+            }
+            // 3) Payload
+            let payload: [String: Any] = [
+                "header": [
+                    "state": [
+                        "formatProperties": true,
+                        "stateless": true,
+                        "unloadObjects": false,
+                        "enableServerStateHeaders": true,
+                        "locale": "en_US"
+                    ],
+                    "policy": [
+                        "types": [
+                            [
+                                "name": "RevisionRule",
+                                "properties": [
+                                    ["name": "object_name"]
+                                ]
+                            ]
+                        ]
+                    ]
+                ]
+            ]
+            // 4) JSON encode
+            let jsonData: Data
+            do {
+                jsonData = try JSONSerialization.data(withJSONObject: payload)
+            } catch {
+                print("Could not encode JSON:", error)
+                return nil
+            }
+            // 5) Build request
+            var request = URLRequest(url: url)
+            request.httpMethod = "POST"
+            request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+            request.setValue("JSESSIONID=\(session)", forHTTPHeaderField: "Cookie")
+            request.httpBody = jsonData
+
+            do {
+                // 6) Send
+                let (data, response) = try await URLSession.shared.data(for: request)
+                if let http = response as? HTTPURLResponse {
+                    self.emitRaw(request.url!, http, data)
+                    guard (200...299).contains(http.statusCode) else {
+                        print("getRevisionRules failed. HTTP status =", http.statusCode)
+                        return nil
+                    }
+                }
+                // 7) Decode
+                let decoder = JSONDecoder()
+                let resp = try decoder.decode(GetRevisionRulesResponse.self, from: data)
+                return resp.output
+            } catch {
+                print("Network or decode error in getRevisionRules:", error)
                 return nil
             }
         }
