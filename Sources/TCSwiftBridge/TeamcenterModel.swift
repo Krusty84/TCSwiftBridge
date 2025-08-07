@@ -432,9 +432,11 @@ public struct SavedQueryInfo {
     public let name: String
     public let description: String
     public let uid: String
+    public let objectID: String
     public let className: String
     public let type: String
 }
+
 
 
 // MARK: Codable models for CreateRelations response
@@ -487,3 +489,19 @@ public struct GetRevisionRulesResponse: Codable {
         case serviceData = "ServiceData"
     }
 }
+
+// MARK: – Models for findSavedQueries
+
+/// Top‐level response
+public struct FindSavedQueriesResponse: Codable {
+    public let qName: String?
+    public let savedQueries: [FolderBasic]? //reuse from Folder
+    public let serviceData: GetPropertiesResponse?   // re–use your existing GetPropertiesResponse for the modelObjects
+
+    enum CodingKeys: String, CodingKey {
+        case qName = ".QName"
+        case savedQueries
+        case serviceData = "ServiceData"
+    }
+}
+

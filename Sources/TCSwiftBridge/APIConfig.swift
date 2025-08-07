@@ -41,7 +41,10 @@ public struct APIConfig {
     }
     public static func tcGetSavedQueriesUrl(tcUrl: String) -> String {
            "\(tcUrl)/JsonRestServices/Query-2006-03-SavedQuery/getSavedQueries"
-       }
+    }
+    public static func tcFindSavedQueriesUrl(tcUrl: String) -> String {
+           "\(tcUrl)/JsonRestServices/Query-2010-04-SavedQuery/findSavedQueries"
+    }
     public static func tcCreateBOMWindows(tcUrl: String) -> String {
         "\(tcUrl)/JsonRestServices/Cad-2007-01-StructureManagement/createBOMWindows"
     }

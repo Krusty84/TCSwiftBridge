@@ -947,6 +947,7 @@ public final class TeamcenterAPIService: ObservableObject {
                         name: entry.name,
                         description: entry.description,
                         uid: q.uid,
+                        objectID: q.uid,
                         className: q.className,
                         type: q.type
                     )
@@ -956,6 +957,63 @@ public final class TeamcenterAPIService: ObservableObject {
                 return nil
             }
         }
+    
+    /// Search for saved queries by name/desc pattern
+    public func findSavedQueries(
+      tcEndpointUrl: String
+    ) async -> [SavedQueryInfo]? {
+      guard let session = jsessionId else { print(...); return nil }
+      guard let url = URL(string: tcEndpointUrl) else { print(...); return nil }
+      
+      // build payload & JSON‐encode…
+      var request = URLRequest(url: url)
+      // set method, headers, body…
+      
+      do {
+        let (data, response) = try await URLSession.shared.data(for: request)
+        if let http = response as? HTTPURLResponse {
+          emitRaw(request.url!, http, data)
+          guard (200...299).contains(http.statusCode) else {
+            print("HTTP error", http.statusCode)
+            return nil
+          }
+        }
+        let resp = try JSONDecoder()
+                      .decode(FindSavedQueriesResponse.self, from: data)
+        guard
+          let rawList = resp.savedQueries,
+          let models  = resp.serviceData?.modelObjects
+        else {
+          print("Missing savedQueries or modelObjects")
+          return nil
+        }
+
+          let result: [SavedQueryInfo] = rawList.compactMap { basic -> SavedQueryInfo? in
+            guard
+              let model = models[basic.uid],
+              let name  = model.props?["query_name"]?.uiValues?.first,
+              let desc  = model.props?["query_desc"]?.uiValues?.first
+            else {
+              return nil
+            }
+            // if objectID is nil, fall back to uid
+            let objID = basic.objectID ?? basic.uid
+            return SavedQueryInfo(
+              name: name,
+              description:  desc,
+              uid:         basic.uid,
+              objectID:   objID,
+              className:   basic.className,
+              type:        basic.type
+            )
+          }
+          return result
+
+      } catch {
+        print("Network or decode error:", error)
+        return nil
+      }
+    }
     
     /// Fetch all revision rules
     public func getRevisionRules(
