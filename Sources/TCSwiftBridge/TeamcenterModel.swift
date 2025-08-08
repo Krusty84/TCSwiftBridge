@@ -143,10 +143,10 @@ public struct SessionInfoResponse: Codable {
 
 /// Basic info for a folder, may be in first level or modelObjects
 public struct FolderBasic: Codable {
-    let objectID: String? // Optional ID if present
-    let uid: String       // Unique identifier
-    let className: String // Class name string
-    let type: String      // Object type
+    public let objectID: String?
+    public let uid: String
+    public let className: String
+    public let type: String
 }
 
 /// One element of "output" array from expandFolder API
@@ -437,6 +437,20 @@ public struct SavedQueryInfo {
     public let type: String
 }
 
+// MARK: – Models for findSavedQueries
+
+/// Top‐level response
+public struct FindSavedQueriesResponse: Codable {
+    public let qName: String?
+    public let savedQueries: [FolderBasic]? //reuse from Folder
+    public let serviceData: GetPropertiesResponse?   // re–use your existing GetPropertiesResponse for the modelObjects
+
+    enum CodingKeys: String, CodingKey {
+        case qName = ".QName"
+        case savedQueries
+        case serviceData = "ServiceData"
+    }
+}
 
 
 // MARK: Codable models for CreateRelations response
@@ -486,21 +500,6 @@ public struct GetRevisionRulesResponse: Codable {
     enum CodingKeys: String, CodingKey {
         case qName = ".QName"
         case output
-        case serviceData = "ServiceData"
-    }
-}
-
-// MARK: – Models for findSavedQueries
-
-/// Top‐level response
-public struct FindSavedQueriesResponse: Codable {
-    public let qName: String?
-    public let savedQueries: [FolderBasic]? //reuse from Folder
-    public let serviceData: GetPropertiesResponse?   // re–use your existing GetPropertiesResponse for the modelObjects
-
-    enum CodingKeys: String, CodingKey {
-        case qName = ".QName"
-        case savedQueries
         case serviceData = "ServiceData"
     }
 }
