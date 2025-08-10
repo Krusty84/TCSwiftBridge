@@ -959,7 +959,6 @@ public final class TeamcenterAPIService: ObservableObject {
         }
     
     
-    
     /// Search for saved queries by name/desc pattern
     public func findSavedQueries(
       tcEndpointUrl: String
@@ -1017,6 +1016,111 @@ public final class TeamcenterAPIService: ObservableObject {
       }
     }
     
+    /// Describe one or more saved queries and return field definitions
+    public func getQueryDescription(
+        tcEndpointUrl: String,
+        queryUids: [String]
+    ) async -> [QueryFieldDescription]? {
+        // 1) Session
+        guard let session = jsessionId else {
+            print("No JSESSIONID—please login first.")
+            return nil
+        }
+        // 2) URL
+        guard let url = URL(string: tcEndpointUrl) else {
+            print("Invalid URL:", tcEndpointUrl)
+            return nil
+        }
+        // 3) Payload
+        let payload: [String: Any] = [
+            "header": [
+                "state": [
+                    "formatProperties": true,
+                    "stateless": true,
+                    "unloadObjects": false,
+                    "enableServerStateHeaders": true,
+                    "locale": "en_US"
+                ],
+                "policy": [
+                    "useRefCount": false,
+                    "types": [
+                        [
+                            "name": "ImanQuery",
+                            "properties": [
+                                ["name": "query_name"],
+                                ["name": "query_desc"]
+                            ]
+                        ]
+                    ]
+                ]
+            ],
+            "body": [
+                "queries": queryUids
+            ]
+        ]
+        // 4) Encode
+        let jsonData: Data
+        do {
+            jsonData = try JSONSerialization.data(withJSONObject: payload)
+        } catch {
+            print("Failed to serialize JSON for getQueryDescription:", error)
+            return nil
+        }
+        // 5) Request
+        var req = URLRequest(url: url)
+        req.httpMethod = "POST"
+        req.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        req.setValue("JSESSIONID=\(session)", forHTTPHeaderField: "Cookie")
+        req.httpBody = jsonData
+
+        do {
+            // 6) Send
+            let (data, resp) = try await URLSession.shared.data(for: req)
+            if let http = resp as? HTTPURLResponse {
+                self.emitRaw(req.url!, http, data)
+                guard (200...299).contains(http.statusCode) else {
+                    print("getQueryDescription failed. HTTP status =", http.statusCode)
+                    return nil
+                }
+            }
+            // 7) Decode
+            let decoder = JSONDecoder()
+            let response = try decoder.decode(DescribeSavedQueriesResponse.self, from: data)
+            guard let lists = response.fieldLists else {
+                print("No fieldLists in DescribeSavedQueries response.")
+                return nil
+            }
+
+            // 8) Flatten + apply LOV rules
+            var result: [QueryFieldDescription] = []
+            for list in lists {
+                for f in list.fields {
+                    // Only include lov values when they’re not the unknown placeholders
+                    let lovUid        = (f.lov?.uid ?? "") != "AAAAAAAAAAAAAA" ? (f.lov?.uid ?? "") : ""
+                    let lovClassName  = (f.lov?.className ?? "") != "unknownClass" ? (f.lov?.className ?? "") : ""
+                    let lovType       = (f.lov?.type ?? "") != "unknownType" ? (f.lov?.type ?? "") : ""
+
+                    let entry = QueryFieldDescription(
+                        attributeName: f.attributeName,
+                        entryName: f.entryName,
+                        logicalOperation: f.logicalOperation,
+                        mathOperation: f.mathOperation,
+                        value: f.value,
+                        attributeType: f.attributeType,
+                        lovUid: lovUid,
+                        lovClassName: lovClassName,
+                        lovType: lovType
+                    )
+                    result.append(entry)
+                }
+            }
+            return result
+
+        } catch {
+            print("Network or decode error in getQueryDescription:", error)
+            return nil
+        }
+    }
     /// Fetch all revision rules
     public func getRevisionRules(
             tcEndpointUrl: String
@@ -1087,6 +1191,8 @@ public final class TeamcenterAPIService: ObservableObject {
                 return nil
             }
         }
+    
+    
     
     /// Create BOM windows for an item using given revision rule info
     public func createBOMWindows(

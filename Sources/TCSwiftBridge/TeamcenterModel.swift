@@ -437,7 +437,7 @@ public struct SavedQueryInfo {
     public let type: String
 }
 
-// MARK: – Models for findSavedQueries
+// MARK: Models for findSavedQueries
 
 /// Top‐level response
 public struct FindSavedQueriesResponse: Codable {
@@ -504,3 +504,51 @@ public struct GetRevisionRulesResponse: Codable {
     }
 }
 
+// MARK: Codable models for getQueryDescription response
+
+public struct QueryLov: Codable {
+    public let objectID: String?
+    public let cParamID: String?
+    public let uid: String?
+    public let className: String?
+    public let type: String?
+}
+
+public struct QueryField: Codable {
+    public let attributeName: String
+    public let entryName: String
+    public let logicalOperation: String
+    public let mathOperation: String
+    public let value: String
+    public let attributeType: Int
+    public let lov: QueryLov?
+}
+
+public struct QueryFieldList: Codable {
+    public let fields: [QueryField]
+}
+
+public struct DescribeSavedQueriesResponse: Codable {
+    public let qName: String?
+    public let fieldLists: [QueryFieldList]?
+    public let serviceData: GetPropertiesResponse?  // reuse (for optional modelObjects)
+    enum CodingKeys: String, CodingKey {
+        case qName = ".QName"
+        case fieldLists
+        case serviceData = "ServiceData"
+    }
+}
+
+/// Flattened field description you asked for
+public struct QueryFieldDescription: Identifiable {
+    public var id: String { attributeName + "|" + entryName } // or UUID
+    public let attributeName: String
+    public let entryName: String
+    public let logicalOperation: String
+    public let mathOperation: String
+    public let value: String
+    public let attributeType: Int
+    public let lovUid: String
+    public let lovClassName: String
+    public let lovType: String
+}
