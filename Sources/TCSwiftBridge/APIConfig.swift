@@ -18,25 +18,28 @@ public struct APIConfig {
     public static func tcSessionInfoUrl(tcUrl: String) -> String {
         "\(tcUrl)/JsonRestServices/Core-2007-01-Session/getTCSessionInfo"
     }
+    public static func tcGetPreferencesUrl(tcUrl: String) -> String {
+        "\(tcUrl)/JsonRestServices/Administration-2012-09-PreferenceManagement/getPreferences"
+    }
     public static func tcGetPropertiesUrl(tcUrl: String) -> String {
         "\(tcUrl)/JsonRestServices/Core-2006-03-DataManagement/getProperties"
     }
-    public static func tcExpandFolder(tcUrl: String) -> String {
+    public static func tcExpandFolderUrl(tcUrl: String) -> String {
         "\(tcUrl)/JsonRestServices/Cad-2008-06-DataManagement/expandFoldersForCAD"
     }
-    public static func tcCreateItem(tcUrl: String) -> String {
+    public static func tcCreateItemUrl(tcUrl: String) -> String {
         "\(tcUrl)/JsonRestServices/Core-2006-03-DataManagement/createItems"
     }
-    public static func tcCreateFolder(tcUrl: String) -> String {
+    public static func tcCreateFolderUrl(tcUrl: String) -> String {
         "\(tcUrl)/JsonRestServices/Core-2006-03-DataManagement/createFolders"
     }
-    public static func tcCreateRelation(tcUrl: String) -> String {
+    public static func tcCreateRelationUrl(tcUrl: String) -> String {
         "\(tcUrl)/JsonRestServices/Core-2006-03-DataManagement/createRelations"
     }
-    public static func tcGetItemFromId(tcUrl: String) -> String {
+    public static func tcGetItemFromIdUrl(tcUrl: String) -> String {
         "\(tcUrl)/JsonRestServices/Core-2007-01-DataManagement/getItemFromId"
     }
-    public static func tcGetRevisionRules(tcUrl: String) -> String {
+    public static func tcGetRevisionRulesUrl(tcUrl: String) -> String {
         "\(tcUrl)/JsonRestServices/Cad-2007-01-StructureManagement/getRevisionRules"
     }
     public static func tcGetSavedQueriesUrl(tcUrl: String) -> String {
@@ -48,16 +51,16 @@ public struct APIConfig {
     public static func tcDescribeSavedQueriesUrl(tcUrl: String) -> String {
            "\(tcUrl)/JsonRestServices/Query-2006-03-SavedQuery/describeSavedQueries"
     }
-    public static func tcCreateBOMWindows(tcUrl: String) -> String {
+    public static func tcCreateBOMWindowsUrl(tcUrl: String) -> String {
         "\(tcUrl)/JsonRestServices/Cad-2007-01-StructureManagement/createBOMWindows"
     }
-    public static func tcAddOrUpdateBOMLine(tcUrl: String) -> String {
+    public static func tcAddOrUpdateBOMLineUrl(tcUrl: String) -> String {
         "\(tcUrl)/JsonRestServices/Bom-2008-06-StructureManagement/addOrUpdateChildrenToParentLine"
     }
-    public static func tcSaveBOMWindows(tcUrl: String) -> String {
+    public static func tcSaveBOMWindowsUrl(tcUrl: String) -> String {
         "\(tcUrl)/JsonRestServices/Cad-2008-06-StructureManagement/saveBOMWindows"
     }
-    public static func tcCloseBOMWindows(tcUrl: String) -> String {
+    public static func tcCloseBOMWindowsUrl(tcUrl: String) -> String {
         "\(tcUrl)/JsonRestServices/Cad-2007-01-StructureManagement/closeBOMWindows"
     }
 }

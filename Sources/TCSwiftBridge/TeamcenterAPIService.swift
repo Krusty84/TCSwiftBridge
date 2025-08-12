@@ -226,6 +226,74 @@ public final class TeamcenterAPIService: ObservableObject {
         }
     }
     
+    /// Fetch Teamcenter Preferences
+    public func getPreferences(
+        tcEndpointUrl: String,
+        preferenceNames: [String] = ["*"],
+        includeDescriptions: Bool = true
+    ) async -> [PreferenceEntry]? {
+        guard let session = jsessionId else {
+            print("getPreferences: missing JSESSIONID (login first)")
+            return nil
+        }
+        guard let url = URL(string: tcEndpointUrl) else {
+            print("getPreferences: bad URL:", tcEndpointUrl)
+            return nil
+        }
+
+        let payload: [String: Any] = [
+            "header": [
+                "state": [
+                    "formatProperties": true,
+                    "stateless": true,
+                    "unloadObjects": false,
+                    "enableServerStateHeaders": true,
+                    "locale": "en_US"
+                ],
+                "policy": [:] as [String: Any]
+            ],
+            "body": [
+                "preferenceNames": preferenceNames,
+                "includePreferenceDescriptions": includeDescriptions
+            ]
+        ]
+
+        let jsonData: Data
+        do {
+            jsonData = try JSONSerialization.data(withJSONObject: payload)
+        } catch {
+            print("getPreferences: JSON serialize error:", error)
+            return nil
+        }
+
+        var req = URLRequest(url: url)
+        req.httpMethod = "POST"
+        req.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        req.setValue("JSESSIONID=\(session)", forHTTPHeaderField: "Cookie")
+        req.httpBody = jsonData
+
+        do {
+            let (data, resp) = try await URLSession.shared.data(for: req)
+            if let http = resp as? HTTPURLResponse {
+                self.emitRaw(req.url!, http, data)
+                guard (200...299).contains(http.statusCode) else {
+                    print("getPreferences: HTTP \(http.statusCode)")
+                    return nil
+                }
+            }
+
+            let decoder = JSONDecoder()
+            let decoded = try decoder.decode(GetPreferencesResponse.self, from: data)
+
+            // Return exactly the simplified array you asked for (the `response` block).
+            return decoded.response ?? []
+
+        } catch {
+            print("getPreferences: network/decode error:", error)
+            return nil
+        }
+    }
+    
     /// Get properties of a single object by UID
     public func getProperties(
         tcEndpointUrl: String,
@@ -434,7 +502,7 @@ public final class TeamcenterAPIService: ObservableObject {
         }
         
         // 2b) Build URLs for expand and getProperties
-        let expandUrlString = APIConfig.tcExpandFolder(tcUrl: tcUrl)
+        let expandUrlString = APIConfig.tcExpandFolderUrl(tcUrl: tcUrl)
         let propsUrlString = APIConfig.tcGetPropertiesUrl(tcUrl: tcUrl)
         
         guard

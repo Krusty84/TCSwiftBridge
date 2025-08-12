@@ -552,3 +552,41 @@ public struct QueryFieldDescription: Identifiable {
     public let lovClassName: String
     public let lovType: String
 }
+
+// MARK: Codable models for getPreferences response
+
+public struct PreferenceDefinition: Codable {
+    public let name: String
+    public let category: String
+    public let description: String
+    public let type: Int
+    public let isArray: Bool
+    public let isDisabled: Bool
+    public let protectionScope: String
+    public let isEnvEnabled: Bool
+    public let isOOTBPreference: Bool
+}
+
+// Allow missing or null fields
+public struct PreferenceValues: Codable {
+    public let valueOrigination: String?
+    public let values: [String]?
+}
+
+// Allow the entire `values` object to be missing
+public struct PreferenceEntry: Codable {
+    public let definition: PreferenceDefinition
+    public let values: PreferenceValues?   // <- was non-optional
+}
+
+public struct GetPreferencesResponse: Codable {
+    public let qName: String?
+    public let serviceData: GetPropertiesResponse?
+    public let response: [PreferenceEntry]?
+
+    enum CodingKeys: String, CodingKey {
+        case qName = ".QName"
+        case serviceData = "ServiceData"
+        case response
+    }
+}
