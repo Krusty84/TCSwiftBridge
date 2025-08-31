@@ -232,22 +232,27 @@ public final class TeamcenterAPIService: ObservableObject {
         username: String,
         password: String
     ) async -> TcLoginResult {
-        // 1) Attempt login
-        let loginOk = await tcLogin(
+        // 1) Attempt login — returns JSESSIONID string or nil
+        guard let sessionId = await tcLogin(
             tcEndpointUrl: APIConfig.tcLoginUrl(tcUrl: tcUrl),
             userName: username,
             userPassword: password
-        )
-        guard (loginOk != nil) else {
+        ) else {
             return TcLoginResult(code: 400, message: "Login failed (tcLogin error)")
         }
 
-        // 2) Get session info
-        if let sessionInfo = await getTcSessionInfo(tcEndpointUrl: APIConfig.tcGetSessionInfoUrl(tcUrl: tcUrl)),
+        // 2) Store the JSESSIONID (if you keep it globally)
+        self.jsessionId = sessionId
+
+        // 3) Call getTcSessionInfo using the valid sessionId
+        if let sessionInfo = await getTcSessionInfo(
+            tcEndpointUrl: APIConfig.tcGetSessionInfoUrl(tcUrl: tcUrl)
+        ),
            !sessionInfo.serverVersion.isEmpty {
             return TcLoginResult(code: 200, message: "Login successful")
         }
-        return TcLoginResult(code: 400, message: "Login failed")
+
+        return TcLoginResult(code: 400, message: "Login failed (no session info)")
     }
     
     
