@@ -15,8 +15,11 @@ public struct APIConfig {
     public static func tcLoginUrl(tcUrl: String) -> String {
         "\(tcUrl)/JsonRestServices/Core-2011-06-Session/login"
     }
-    public static func tcSessionInfoUrl(tcUrl: String) -> String {
+    public static func tcGetSessionInfoUrl(tcUrl: String) -> String {
         "\(tcUrl)/JsonRestServices/Core-2007-01-Session/getTCSessionInfo"
+    }
+    public static func tcRefreshtPreferencesUrl(tcUrl: String) -> String {
+        "\(tcUrl)/JsonRestServices/Administration-2011-05-PreferenceManagement/refreshPreferences"
     }
     public static func tcGetPreferencesUrl(tcUrl: String) -> String {
         "\(tcUrl)/JsonRestServices/Administration-2012-09-PreferenceManagement/getPreferences"

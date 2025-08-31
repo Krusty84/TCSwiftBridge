@@ -226,6 +226,82 @@ public final class TeamcenterAPIService: ObservableObject {
         }
     }
     
+    //// Login to Teamcenter , check Teamcenter session and store JSESSIONID cookie
+    public func tcLoginGetSession(
+        tcUrl: String,
+        username: String,
+        password: String
+    ) async -> TcLoginResult {
+        // 1) Attempt login
+        let loginOk = await tcLogin(
+            tcEndpointUrl: APIConfig.tcLoginUrl(tcUrl: tcUrl),
+            userName: username,
+            userPassword: password
+        )
+        guard (loginOk != nil) else {
+            return TcLoginResult(code: 400, message: "Login failed (tcLogin error)")
+        }
+
+        // 2) Get session info
+        if let sessionInfo = await getTcSessionInfo(tcEndpointUrl: APIConfig.tcGetSessionInfoUrl(tcUrl: tcUrl)),
+           !sessionInfo.serverVersion.isEmpty {
+            return TcLoginResult(code: 200, message: "Login successful")
+        }
+        return TcLoginResult(code: 400, message: "Login failed")
+    }
+    
+    
+    /// Refresh Teamcenter (Cache) Preferences
+    public func refreshPreferences(tcEndpointUrl: String) async -> Bool {
+        guard let session = jsessionId else {
+            print("refreshPreferences: missing JSESSIONID (login first)")
+            return false
+        }
+        guard let url = URL(string: tcEndpointUrl) else {
+            print("refreshPreferences: bad URL:", tcEndpointUrl)
+            return false
+        }
+
+        let payload: [String: Any] = [
+            "header": [
+                "state": [
+                    "formatProperties": true,
+                    "stateless": true,
+                    "unloadObjects": false,
+                    "enableServerStateHeaders": true,
+                    "locale": "en_US"
+                ],
+                "policy": [:] as [String: Any]
+            ],
+            "body": [:] as [String: Any]
+        ]
+
+        do {
+            let body = try JSONSerialization.data(withJSONObject: payload)
+
+            var req = URLRequest(url: url)
+            req.httpMethod = "POST"
+            req.setValue("application/json", forHTTPHeaderField: "Content-Type")
+            req.setValue("JSESSIONID=\(session)", forHTTPHeaderField: "Cookie")
+            req.httpBody = body
+
+            let (data, resp) = try await URLSession.shared.data(for: req)
+            if let http = resp as? HTTPURLResponse {
+                self.emitRaw(req.url!, http, data)
+                guard (200...299).contains(http.statusCode) else {
+                    print("refreshPreferences: HTTP \(http.statusCode)")
+                    return false
+                }
+            }
+
+            let decoded = try JSONDecoder().decode(RefreshPreferencesResponse.self, from: data)
+            return decoded.out
+        } catch {
+            print("refreshPreferences: network/decode error:", error)
+            return false
+        }
+    }
+    
     /// Fetch Teamcenter Preferences
     public func getPreferences(
         tcEndpointUrl: String,
@@ -292,6 +368,19 @@ public final class TeamcenterAPIService: ObservableObject {
             print("getPreferences: network/decode error:", error)
             return nil
         }
+    }
+    
+    /// Combine Refresh and Get Preferences in single function
+    public func getRefreshedPreferences(
+        tcUrl: String
+    ) async -> [PreferenceEntry]? {
+        
+        let ok = await refreshPreferences(tcEndpointUrl: APIConfig.tcRefreshtPreferencesUrl(tcUrl: tcUrl))
+        guard ok else {
+            print("getRefreshedPreferences: refreshPreferences returned false")
+            return nil
+        }
+        return await getPreferences(tcEndpointUrl: APIConfig.tcGetPreferencesUrl(tcUrl: tcUrl))
     }
     
     /// Get properties of a single object by UID

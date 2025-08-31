@@ -32,6 +32,13 @@ public struct LoginResponse: Codable {
     }
 }
 
+/// Response from tcLoginGetSession method
+public struct TcLoginResult {
+    public let code: Int
+    public let message: String
+}
+
+
 /// Represents a session object with IDs and type info
 public struct SessionObject: Codable {
     let objectID: String?   // Optional object identifier
@@ -551,6 +558,18 @@ public struct QueryFieldDescription: Identifiable {
     public let lovUid: String
     public let lovClassName: String
     public let lovType: String
+}
+
+// MARK: - Codable models for refreshPreferences response
+
+public struct RefreshPreferencesResponse: Codable {
+    let qName: String?
+    let out: Bool
+
+    enum CodingKeys: String, CodingKey {
+        case qName = ".QName"
+        case out
+    }
 }
 
 // MARK: Codable models for getPreferences response
